@@ -16,6 +16,7 @@ import numpy as np
 from TSPClasses import *
 import heapq
 import itertools
+import random
 
 
 
@@ -150,8 +151,42 @@ class TSPSolver:
 	'''
 		
 	def fancy( self,time_allowance=60.0 ):
-		pass
-		
+		results = {}
+		foundTour = False
+		count = 0
+		bssf = None
+		start_time = time.time()
 
+		cities = self._scenario.getCities()
 
+		while not foundTour and time.time() - start_time < time_allowance:
+			swap = random.randint(0, len(cities) - 1)
+			temp = cities[0]
+			cities[0] = cities[swap]
+			cities[swap] = temp
 
+			i = 0
+			while i < len(cities) - 2:
+				j = i + 2
+				while j < len(cities) - 1:
+					if cities[i].costTo(cities[i + 1]) > cities[i].costTo(cities[j]):
+						temp = cities[i + 1]
+						cities[i + 1] = cities[j]
+						cities[j] = temp
+					j += 1
+				i += 1
+			bssf = TSPSolution(cities)
+			if bssf.cost < np.inf:
+				foundTour = True
+			count += 1
+
+		end_time = time.time()
+		results['cost'] = bssf.cost if foundTour else math.inf
+		results['time'] = end_time - start_time
+		results['count'] = count
+		results['soln'] = bssf
+		results['max'] = None
+		results['total'] = None
+		results['pruned'] = None
+
+		return results
