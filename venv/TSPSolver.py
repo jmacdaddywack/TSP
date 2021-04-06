@@ -3,8 +3,6 @@
 from which_pyqt import PYQT_VER
 if PYQT_VER == 'PYQT5':
 	from PyQt5.QtCore import QLineF, QPointF
-elif PYQT_VER == 'PYQT4':
-	from PyQt4.QtCore import QLineF, QPointF
 else:
 	raise Exception('Unsupported Version of PyQt: {}'.format(PYQT_VER))
 
@@ -90,7 +88,7 @@ class TSPSolver:
 		start_time = time.time()
 
 		while not foundTour and time.time() - start_time < time_allowance:
-			cities = self._scenario.getCities()
+			cities = self._scenario.getCities().copy()
 			currentCity = cities.pop(0)
 			route = [currentCity]
 
@@ -151,15 +149,19 @@ class TSPSolver:
 	'''
 		
 	def fancy( self,time_allowance=60.0 ):
+		max_repetitions = 10
 		results = {}
 		foundTour = False
 		count = 0
 		bssf = None
 		start_time = time.time()
 
-		cities = self._scenario.getCities()
+		best_cost = np.inf
+		best_bssf = None
+		num_solutions = 0
+		cities = self._scenario.getCities().copy()
 
-		while not foundTour and time.time() - start_time < time_allowance:
+		while num_solutions < max_repetitions and time.time() - start_time < time_allowance:
 			swap = random.randint(0, len(cities) - 1)
 			temp = cities[0]
 			cities[0] = cities[swap]
@@ -180,11 +182,24 @@ class TSPSolver:
 				foundTour = True
 			count += 1
 
+			if best_cost > bssf.cost:
+				print ("Old cost: ", best_cost)
+				print ("New cost: ", bssf.cost)
+				best_cost = bssf.cost
+				best_bssf = bssf
+
+			num_solutions += 1
+			if num_solutions >= max_repetitions:
+				if not foundTour:        # If still hasn't found a solution by the time num_solutions reaches MAX_REPETITIONS
+					max_repetitions += 1 # allow for one more run
+
+		print("Number of Solutions: ", num_solutions)
+
 		end_time = time.time()
-		results['cost'] = bssf.cost if foundTour else math.inf
+		results['cost'] = best_cost if foundTour else math.inf
 		results['time'] = end_time - start_time
 		results['count'] = count
-		results['soln'] = bssf
+		results['soln'] = best_bssf
 		results['max'] = None
 		results['total'] = None
 		results['pruned'] = None
